@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificación Oficial - Moto Servicio Maxcanú</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-brand-dark text-gray-100 flex items-center justify-center min-h-screen p-4">
+
+  <div id="contenedor-verificacion" class="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-6 text-center space-y-4">
+    <div class="animate-pulse text-yellow-400 font-bold">Cargando verificación oficial...</div>
+  </div>
+
+  <script type="module">
+    import { db, collection, query, where, getDocs } from "./js/firebase-config.js";
+    import { renderizarCredencialModal } from "./js/credencial.js";
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const params = new URLSearchParams(window.location.search);
+      const codigo = params.get("codigo") || params.get("unidad");
+      const contenedor = document.getElementById("contenedor-verificacion");
+
+      if (!codigo) {
+        contenedor.innerHTML = `
+          <div class="text-red-500 font-bold">⚠️ Código de verificación no proporcionado.</div>
+        `;
+        return;
+      }
+
+      try {
+        const q = query(
+          collection(db, "choferes"),
+          where("codigoAcceso", "==", codigo.trim().toUpperCase())
+        );
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          contenedor.innerHTML = `
+            <div class="text-red-500 font-bold">🛑 UNIDAD O CÓDIGO NO REGISTRADO EN EL PADRÓN OFICIAL.</div>
+          `;
+          return;
+        }
+
+        const chofer = snap.docs[0].data();
+        contenedor.innerHTML = `<div id="credencial-target"></div>`;
+        renderizarCredencialModal(chofer, "credencial-target");
+      } catch (e) {
+        contenedor.innerHTML = `<div class="text-red-500">Error en verificación: ${e.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>
